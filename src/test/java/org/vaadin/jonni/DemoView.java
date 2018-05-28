@@ -8,8 +8,6 @@ import com.vaadin.flow.router.Route;
 public class DemoView extends Div {
 
     public DemoView() {
-        PaymentRequest paymentRequest = new PaymentRequest();
-		add(paymentRequest);
-		paymentRequest.isSupported(isSupported -> Notification.show("Supported: " + isSupported));
+		PaymentRequest.isSupported(isSupported -> Notification.show("Supported: " + isSupported));
     }
 }

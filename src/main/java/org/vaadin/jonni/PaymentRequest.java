@@ -1,38 +1,31 @@
 package org.vaadin.jonni;
 
-import com.vaadin.flow.component.ClientCallable;
-import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.Tag;
 import com.vaadin.flow.component.UI;
 
-@Tag("div")
-public class PaymentRequest extends Component {
+public class PaymentRequest {
 
-	private SupportedTestCallback isSupportedCallback;
+	static void isSupported(SupportedTestCallback callback) {
 
-	void isSupported(SupportedTestCallback callback) {
-		this.isSupportedCallback = callback;
+		UI ui = UI.getCurrent();
+		ui.getElement().addEventListener("paymentRequestSupportChange", event -> {
+			callback.isSupported(event.getEventData().asBoolean());
+		});
 
-		UI.getCurrent().getPage().executeJavaScript(""
+		ui.getPage().executeJavaScript(""
 
-				+ "debugger;\n"
+				+ "var isSupported = false;\n"
 
 				+ "if(window.PaymentRequest) {\n"
 
-				+ "  $0.$server.isSupportedCallback(true);\n"
+				+ "  isSupported = true;\n"
 
-				+ "} else {\n"
+				+ "}\n"
 
-				+ "  $0.$server.isSupportedCallback(false);\n"
+				+ "var event = new CustomEvent('paymentRequestSupportChange', { detail: isSupported });\n"
 
-				+ "}", this);
+				+ "$0.dispatchEvent(event)\n", ui);
 	}
 
-	@ClientCallable
-	void isSupportedCallback(boolean isSupported) {
-		this.isSupportedCallback.isSupported(isSupported);
-	}
-	
 	interface SupportedTestCallback {
 		void isSupported(boolean isSupported);
 	}
