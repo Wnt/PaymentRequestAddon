@@ -1,6 +1,6 @@
 # Payment Request Addon
 
-Vaadin 10 Java integration of https://github.com/PolymerElements/paper-slider
+Vaadin 10 Java integration of https://developer.mozilla.org/en-US/docs/Web/API/PaymentRequest
 
 ## Development instructions
 
