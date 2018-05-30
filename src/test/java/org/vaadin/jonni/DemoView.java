@@ -2,9 +2,13 @@ package org.vaadin.jonni;
 
 import org.vaadin.jonni.PaymentRequest.PaymentResponse;
 
+import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.H1;
+import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.Notification.Position;
 import com.vaadin.flow.router.Route;
@@ -29,41 +33,50 @@ public class DemoView extends Div {
 			}
 		});
 		button = new Button("Pay");
-		add(button);
+		add(new H1("Vaadin 10 Payment Request API demo"), button,
+				new Paragraph("Please do not use real credit card information on this site!"),
+				new Paragraph(new Text("You can find some valid format "),
+						new Anchor("http://www.getcreditcardnumbers.com/", "test"), new Text(" "),
+						new Anchor("https://stripe.com/docs/testing#cards", "cards"), new Text(" "),
+						new Anchor("https://developer.paypal.com/developer/creditCardGenerator/", "online"),
+						new Text(".")));
 	}
 
-	private void addPaymentRequestHandlerToButton() {
-		JsonArray supportedPaymentMethods = getSupportedMethods();
+private void addPaymentRequestHandlerToButton() {
+JsonArray supportedPaymentMethods = getSupportedMethods();
 
-		JsonObject paymentDetails = getPaymentDetails();
+JsonObject paymentDetails = getPaymentDetails();
 
-		PaymentRequest paymentRequest = new PaymentRequest(supportedPaymentMethods, paymentDetails);
-		paymentRequest.setPaymentResponseCallback((paymentResponse) -> {
-			JsonObject eventData = paymentResponse.getEventData();
-			Notification.show("Please wait a moment while we finish the payment via our payment gateway.", 9000, Position.MIDDLE);
-			
-			Command onPaymentGatewayRequestComplete = () -> {
-				// Close the Payment Request native dialog
-				paymentResponse.complete();
-				String cardNumber = eventData.getObject("details").getString("cardNumber");
-				String cardEnding = cardNumber.substring(cardNumber.length() - 4);
-				Notification.show(
-						"Purchase complete! We have charged the total (1337€) from your credit card ending in "
-								+ cardEnding, 9000, Position.MIDDLE);
-			};
-			startPaymentGatewayQuery(paymentResponse, eventData, onPaymentGatewayRequestComplete);
-		});
-		paymentRequest.install(button);
+PaymentRequest paymentRequest = new PaymentRequest(supportedPaymentMethods, paymentDetails);
+paymentRequest.setPaymentResponseCallback((paymentResponse) -> {
+	JsonObject eventData = paymentResponse.getEventData();
+	Notification.show("Please wait a moment while we finish the payment via our payment gateway.", 9000,
+			Position.MIDDLE);
 
-	}
+	Command onPaymentGatewayRequestComplete = () -> {
+		// Close the Payment Request native dialog
+		paymentResponse.complete();
+		String cardNumber = eventData.getObject("details").getString("cardNumber");
+		String cardEnding = cardNumber.substring(cardNumber.length() - 4);
+		Notification
+				.show("Purchase complete! We have charged the total (1337€) from your credit card ending in "
+						+ cardEnding, 9000, Position.MIDDLE);
+	};
+	startPaymentGatewayQuery(paymentResponse, eventData, onPaymentGatewayRequestComplete);
+});
+paymentRequest.install(button);
+
+}
 
 	/**
 	 * simulates asynchronous communication with a payment gateway
+	 * 
 	 * @param paymentResponse
 	 * @param eventData
 	 * @param onPaymentGatewayRequestComplete
 	 */
-	private void startPaymentGatewayQuery(PaymentResponse paymentResponse, JsonObject eventData, Command onPaymentGatewayRequestComplete) {
+	private void startPaymentGatewayQuery(PaymentResponse paymentResponse, JsonObject eventData,
+			Command onPaymentGatewayRequestComplete) {
 		UI ui = UI.getCurrent();
 		Thread paymentGatewayThread = new Thread(() -> {
 			try {
