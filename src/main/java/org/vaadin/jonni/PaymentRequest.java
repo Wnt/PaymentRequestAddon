@@ -1,5 +1,9 @@
 package org.vaadin.jonni;
 
+import java.io.IOException;
+import java.nio.charset.Charset;
+
+import com.google.common.io.Resources;
 import com.vaadin.flow.component.HasElement;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.dom.DomEvent;
@@ -27,20 +31,20 @@ public class PaymentRequest {
 		PaymentRequestSupportReportListener listener = new PaymentRequestSupportReportListener(callback);
 		final DomListenerRegistration registration = element.addEventListener("paymentRequestSupportReport", listener);
 		listener.setRegistration(registration);
+		String js = loadJavascript("support-test.js");
 
-		ui.getPage().executeJavaScript(""
+		ui.getPage().executeJavaScript(js, ui);
+	}
 
-				+ "var isSupported = false;\n"
-
-				+ "if (window.PaymentRequest) {\n"
-
-				+ "  isSupported = true;\n"
-
-				+ "}\n"
-
-				+ "var event = new CustomEvent('paymentRequestSupportReport', { detail: isSupported });\n"
-
-				+ "$0.dispatchEvent(event)\n", ui);
+	private static String loadJavascript(String jsFilename) {
+		String js = null;
+		try {
+			js = Resources.toString(Resources.getResource("org/vaadin/jonni/" + jsFilename), Charset.forName("UTF-8"));
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw new RuntimeException("Could not read " + jsFilename, e);
+		}
+		return js;
 	}
 
 	private static final class PaymentRequestSupportReportListener implements DomEventListener {
@@ -53,12 +57,15 @@ public class PaymentRequest {
 
 		@Override
 		public void handleEvent(DomEvent event) {
-			callback.isSupported(event.getEventData().asBoolean());
+			JsonObject eventData = event.getEventData();
+			boolean isSupported = eventData.getBoolean("event.detail");
+			callback.isSupported(isSupported);
 			registration.remove();
 		}
 
 		public void setRegistration(DomListenerRegistration registration) {
 			this.registration = registration;
+			registration.addEventData("event.detail");
 		}
 	}
 
@@ -90,7 +97,6 @@ public class PaymentRequest {
 					+ "", element);
 		}
 
-
 		public JsonObject getEventData() {
 			return eventData;
 		}
@@ -106,52 +112,14 @@ public class PaymentRequest {
 		UI ui = UI.getCurrent();
 		Element element = target.getElement();
 		final DomListenerRegistration registration = element.addEventListener("paymentRequestSuccess", event -> {
-			JsonObject eventData = event.getEventData();
+			JsonObject eventData = event.getEventData().getObject("event.detail");
 			PaymentResponse paymentResponse = new PaymentResponse(eventData, target);
 			paymentResponseCallback.onPaymentResponse(paymentResponse);
 		});
-		ui.getPage().executeJavaScript(""
+		registration.addEventData("event.detail");
 
-				+ "//debugger;\n"
+		String js = loadJavascript("install.js");
 
-				+ "$0.addEventListener('click', () => {\n"
-
-				+ "var supportedPaymentMethods = JSON.parse($1);\n"
-
-				+ "var paymentDetails = JSON.parse($2);\n"
-
-				+ "var paymentRequest = new PaymentRequest(\n"
-
-				+ "  supportedPaymentMethods,\n"
-
-				+ "  paymentDetails\n"
-
-				+ ");"
-
-				+ "paymentRequest.show()\n"
-
-				+ "  .then((paymentResponse) => {"
-
-				// Store into target element so that we can call paymentResponse.complete()
-				// later on
-				+ "    $0.lastPaymentResponse = paymentResponse;"
-
-				+ "    var event = new CustomEvent('paymentRequestSuccess', detail: paymentResponse);\n"
-
-				+ "    $0.dispatchEvent(event);\n"
-
-				+ "  })\n"
-
-				+ "  .catch((err) => {\n"
-
-				+ "    var event = new CustomEvent('paymentRequestFailure', detail: err);\n"
-
-				+ "    $0.dispatchEvent(event);\n"
-
-				+ "  });\n"
-
-				+ "});\n"
-
-				+ "", element, supportedPaymentMethods.toJson(), paymentDetails.toJson());
+		ui.getPage().executeJavaScript(js, element, supportedPaymentMethods.toJson(), paymentDetails.toJson());
 	}
 }
