@@ -25,7 +25,7 @@ public class PaymentRequest {
 		this.paymentDetails = paymentDetails;
 	}
 
-	static void queryIsSupported(SupportedTestCallback callback) {
+	public static void queryIsSupported(SupportedTestCallback callback) {
 		UI ui = UI.getCurrent();
 		Element element = ui.getElement();
 		PaymentRequestSupportReportListener listener = new PaymentRequestSupportReportListener(callback);
@@ -69,11 +69,11 @@ public class PaymentRequest {
 		}
 	}
 
-	interface SupportedTestCallback {
+	public interface SupportedTestCallback {
 		void isSupported(boolean isSupported);
 	}
 
-	interface PaymentResponseCallback {
+	public interface PaymentResponseCallback {
 		void onPaymentResponse(PaymentResponse paymentResponse);
 	}
 
